@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache; // Cache وارد شده
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -42,18 +43,15 @@ class ArticleController extends Controller
             'published_at' => 'nullable|date',
         ]);
         
-        // اگر تاریخ انتشار تعیین نشده و وضعیت منتشر شده است
         if ($validated['status'] === 'published' && empty($validated['published_at'])) {
             $validated['published_at'] = now();
         }
         
-        // اگر تصویر شاخص آپلود شده است
         if ($request->hasFile('featured_image')) {
             $path = $request->file('featured_image')->store('articles', 'public');
             $validated['featured_image'] = $path;
         }
         
-        // ایجاد مقاله
         $article = Article::create([
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
@@ -66,7 +64,6 @@ class ArticleController extends Controller
             'published_at' => $validated['published_at'] ?? null,
         ]);
         
-        // اختصاص برچسب‌ها
         if (isset($validated['tags'])) {
             $article->tags()->sync($validated['tags']);
         }
@@ -78,7 +75,27 @@ class ArticleController extends Controller
 
     public function show(Article $article)
     {
-        return view('admin.articles.show', compact('article'));
+        if (!$article->isPublishedOrScheduled()) {
+            abort(404);
+        }
+        
+        $article->increment('views');
+        
+        $relatedArticles = Cache::remember('related_articles_' . $article->id, now()->addHours(3), function () use ($article) {
+            return Article::published()
+                ->with(['category', 'user', 'tags'])
+                ->where('id', '!=', $article->id)
+                ->where(function ($query) use ($article) {
+                    $query->where('category_id', $article->category_id)
+                        ->orWhereHas('tags', function ($q) use ($article) {
+                            $q->whereIn('id', $article->tags->pluck('id'));
+                        });
+                })
+                ->take(5)
+                ->get();
+        });
+
+        return view('articles.show', compact('article', 'relatedArticles'));
     }
 
     public function edit(Article $article)
@@ -103,29 +120,23 @@ class ArticleController extends Controller
             'remove_image' => 'nullable|boolean',
         ]);
         
-        // اگر تاریخ انتشار تعیین نشده و وضعیت منتشر شده است
         if ($validated['status'] === 'published' && empty($validated['published_at'])) {
             $validated['published_at'] = now();
         }
         
-        // اگر کاربر خواسته تصویر حذف شود
         if (isset($validated['remove_image']) && $validated['remove_image'] && $article->featured_image) {
             Storage::disk('public')->delete($article->featured_image);
             $article->featured_image = null;
         }
         
-        // اگر تصویر شاخص جدید آپلود شده است
         if ($request->hasFile('featured_image')) {
-            // حذف تصویر قبلی اگر وجود داشته باشد
             if ($article->featured_image) {
                 Storage::disk('public')->delete($article->featured_image);
             }
-            
             $path = $request->file('featured_image')->store('articles', 'public');
             $article->featured_image = $path;
         }
         
-        // بروزرسانی مقاله
         $article->update([
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
@@ -136,7 +147,6 @@ class ArticleController extends Controller
             'published_at' => $validated['published_at'] ?? null,
         ]);
         
-        // بروزرسانی برچسب‌ها
         if (isset($validated['tags'])) {
             $article->tags()->sync($validated['tags']);
         } else {
@@ -150,7 +160,6 @@ class ArticleController extends Controller
 
     public function destroy(Article $article)
     {
-        // حذف تصویر شاخص اگر وجود داشته باشد
         if ($article->featured_image) {
             Storage::disk('public')->delete($article->featured_image);
         }
@@ -160,5 +169,15 @@ class ArticleController extends Controller
         return redirect()
             ->route('admin.articles.index')
             ->with('success', 'مقاله با موفقیت حذف شد.');
+    }
+
+    public function category(Category $category)
+    {
+        $articles = $category->articles()
+            ->where('status', 'published')
+            ->latest()
+            ->paginate(10);
+
+        return view('articles.category', compact('category', 'articles'));
     }
 }

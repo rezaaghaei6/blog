@@ -11,8 +11,7 @@ use App\Http\Controllers\Admin\DashboardController;
 Route::get('/', [App\Http\Controllers\ArticleController::class, 'index'])->name('home');
 Route::get('/articles', [App\Http\Controllers\ArticleController::class, 'index'])->name('articles.index');
 Route::get('/articles/{article:slug}', [App\Http\Controllers\ArticleController::class, 'show'])->name('articles.show');
-Route::get('/categories/{category:slug}', [App\Http\Controllers\ArticleController::class, 'category'])->name('articles.category');
-Route::get('/tags/{tag:slug}', [App\Http\Controllers\ArticleController::class, 'tag'])->name('articles.tag');
+Route::get('/categories/{category:slug}', [App\Http\Controllers\Admin\ArticleController::class, 'category'])->name('articles.category');Route::get('/tags/{tag:slug}', [App\Http\Controllers\ArticleController::class, 'tag'])->name('articles.tag');
 Route::get('/search', [App\Http\Controllers\ArticleController::class, 'search'])->name('articles.search');
 
 // Admin Routes

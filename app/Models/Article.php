@@ -20,6 +20,7 @@ class Article extends Model
         'user_id',
         'status',
         'published_at',
+        'views', // اضافه شده
     ];
 
     protected $casts = [
@@ -62,5 +63,16 @@ class Article extends Model
     public function scopeDrafts($query)
     {
         return $query->where('status', 'draft');
+    }
+
+    /**
+     * Check if the article is published or scheduled and ready to be shown.
+     *
+     * @return bool
+     */
+    public function isPublishedOrScheduled()
+    {
+        return $this->status === 'published' || 
+               ($this->status === 'scheduled' && $this->published_at <= now());
     }
 }

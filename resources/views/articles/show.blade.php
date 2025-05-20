@@ -1,196 +1,193 @@
-@extends('layouts.front')
+@extends('layouts.app')
 
 @section('title', $article->title)
-@section('meta_description', $article->excerpt)
-@section('meta_keywords', $article->tags->pluck('name')->join(', '))
 
 @section('content')
-    <!-- هدر مقاله -->
-    <div class="bg-dark text-white py-5" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{{ $article->image ? asset('storage/' . $article->image) : 'https://via.placeholder.com/1200x600' }}') no-repeat center center; background-size: cover;">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto text-center">
-                    <span class="badge bg-primary mb-3">{{ $article->category->name }}</span>
-                    <h1 class="display-4 fw-bold">{{ $article->title }}</h1>
-                    <div class="d-flex justify-content-center mt-4">
-                        <div class="mx-3">
-                            <i class="far fa-user me-1"></i> {{ $article->user->name }}
-                        </div>
-                        <div class="mx-3">
-                            <i class="far fa-calendar me-1"></i> {{ $article->published_at->format('d F Y') }}
-                        </div>
-                        <div class="mx-3">
-                            <i class="far fa-eye me-1"></i> {{ $article->views }} بازدید
-                        </div>
-                    </div>
+    <div class="container-fluid px-0">
+        <!-- Hero Header with Featured Image -->
+        <section class="hero-section position-relative text-center text-white d-flex align-items-center" 
+                 style="height: 60vh; background: url('{{ $article->featured_image ? asset('storage/' . $article->featured_image) : 'https://via.placeholder.com/1920x1080' }}'); background-size: cover; background-position: center;">
+            <div class="container position-relative">
+                <h1 class="fs-1 fw-bold mb-3 text-shadow" aria-label="عنوان مقاله">{{ $article->title }}</h1>
+                <div class="d-flex justify-content-center gap-3 text-light mb-3">
+                    <span><i class="bi bi-person me-1"></i>{{ $article->user->name }}</span>
+                    <span><i class="bi bi-calendar me-1"></i>{{ $article->published_at->format('d M Y') }}</span>
+                    <span><i class="bi bi-eye me-1"></i>{{ $article->views }}</span>
+                </div>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    @if ($article->category)
+                        <a href="{{ route('articles.category', $article->category->slug) }}" class="badge bg-blue text-white text-decoration-none px-3 py-2">{{ $article->category->name }}</a>
+                    @endif
+                    @foreach ($article->tags as $tag)
+                        <a href="{{ route('articles.tag', $tag->slug) }}" class="badge bg-secondary text-white text-decoration-none px-3 py-2">{{ $tag->name }}</a>
+                    @endforeach
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- محتوای مقاله -->
-    <section class="py-5">
-        <div class="container">
-            <div class="row">
-                <!-- ستون اصلی -->
-                <div class="col-lg-8">
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="article-content">
-                                <p class="lead">{{ $article->excerpt }}</p>
-                                
-                                {!! $article->content !!}
-                            </div>
-                            
-                            <!-- برچسب‌ها -->
-                            <div class="mt-4 pt-4 border-top">
-                                <h5>برچسب‌ها:</h5>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($article->tags as $tag)
-                                        <a href="{{ route('articles.tag', $tag->slug) }}" class="badge bg-light text-dark text-decoration-none p-2">{{ $tag->name }}</a>
-                                    @endforeach
-                                </div>
-                            </div>
-                            
-                            <!-- اشتراک‌گذاری -->
-                            <div class="mt-4 pt-4 border-top">
-                                <h5>اشتراک‌گذاری:</h5>
-                                <div class="d-flex gap-2">
-                                    <a href="https://t.me/share/url?url={{ urlencode(route('articles.show', $article->slug)) }}&text={{ urlencode($article->title) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fab fa-telegram"></i> تلگرام</a>
-                                    <a href="https://twitter.com/intent/tweet?url={{ urlencode(route('articles.show', $article->slug)) }}&text={{ urlencode($article->title) }}" target="_blank" class="btn btn-sm btn-outline-info"><i class="fab fa-twitter"></i> توییتر</a>
-                                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ urlencode(route('articles.show', $article->slug)) }}&title={{ urlencode($article->title) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fab fa-linkedin"></i> لینکدین</a>
-                                    <a href="https://api.whatsapp.com/send?text={{ urlencode($article->title . ' ' . route('articles.show', $article->slug)) }}" target="_blank" class="btn btn-sm btn-outline-success"><i class="fab fa-whatsapp"></i> واتساپ</a>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Main Content -->
+        <div class="container my-5">
+            <div class="row justify-content-center">
+                <!-- Article Content -->
+                <div class="col-12 col-lg-10">
+                    <!-- Article Meta -->
+                    <div class="d-flex justify-content-between text-muted mb-4">
+                        <span>زمان مطالعه: {{ ceil(str_word_count(strip_tags($article->content)) / 200) }} دقیقه</span>
+                        <span>{{ str_word_count(strip_tags($article->content)) }} کلمه</span>
                     </div>
-                    
-                    <!-- نویسنده -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0">
-                                    <img src="https://via.placeholder.com/100x100" class="rounded-circle" width="80" height="80" alt="تصویر نویسنده">
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h5>{{ $article->user->name }}</h5>
-                                    <p class="text-muted mb-2">نویسنده و کارشناس حوزه {{ $article->category->name }}</p>
-                                    <p class="mb-0">{{ $article->user->bio ?? 'این نویسنده هنوز بیوگرافی برای خود ثبت نکرده است.' }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- مقالات مرتبط -->
-                    @if($relatedArticles->count() > 0)
-                        <h4 class="mb-4">مقالات مرتبط</h4>
-                        <div class="row">
-                            @foreach($relatedArticles as $relatedArticle)
-                                <div class="col-md-6 mb-4">
-                                    <div class="card article-card h-100">
-                                        <img src="{{ $relatedArticle->image ? asset('storage/' . $relatedArticle->image) : 'https://via.placeholder.com/400x250' }}" class="card-img-top" alt="{{ $relatedArticle->title }}">
-                                        <div class="card-body">
-                                            <h5 class="card-title">{{ $relatedArticle->title }}</h5>
-                                            <div class="article-meta">
-                                                <span><i class="far fa-user me-1"></i> {{ $relatedArticle->user->name }}</span>
-                                                <span><i class="far fa-clock me-1"></i> {{ $relatedArticle->published_at->diffForHumans() }}</span>
-                                            </div>
-                                            <a href="{{ route('articles.show', $relatedArticle->slug) }}" class="btn btn-primary mt-3">ادامه مطلب</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
+                    @if ($article->excerpt)
+                        <div class="alert alert-blue mb-4" role="alert">
+                            {{ $article->excerpt }}
                         </div>
                     @endif
-                </div>
-                
-                <!-- سایدبار -->
-                <div class="col-lg-4">
-                    <!-- جستجو -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">جستجو</h5>
-                            <form action="{{ route('articles.search') }}" method="GET">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="query" placeholder="جستجو در مقالات...">
-                                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
-                                </div>
-                            </form>
-                        </div>
+                    <article class="card p-5 border-0 bg-white shadow-sm animate-fade-in">
+                        {!! $article->content !!}
+                    </article>
+                    <!-- Publisher Info -->
+                    <div class="mt-4 text-muted d-flex justify-content-between align-items-center border-top pt-3">
+                        <span class="fw-bold">منتشرکننده: {{ $article->user->name }}</span>
+                        <span>{{ $article->published_at->format('d M Y') }}</span>
                     </div>
-                    
-                    <!-- دسته‌بندی‌ها -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">دسته‌بندی‌ها</h5>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                @foreach(\App\Models\Category::withCount('articles')->get() as $category)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <a href="{{ route('articles.category', $category->slug) }}" class="text-decoration-none text-dark">{{ $category->name }}</a>
-                                        <span class="badge bg-primary rounded-pill">{{ $category->articles_count }}</span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- مقالات محبوب -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">مقالات محبوب</h5>
-                        </div>
-                        <div class="card-body">
-                            @foreach(\App\Models\Article::published()->orderByDesc('views')->limit(3)->get() as $popularArticle)
-                                <div class="mb-3">
-                                    <div class="row g-0">
-                                        <div class="col-4">
-                                            <img src="{{ $popularArticle->image ? asset('storage/' . $popularArticle->image) : 'https://via.placeholder.com/100x100' }}" class="img-fluid rounded" alt="{{ $popularArticle->title }}">
-                                        </div>
-                                        <div class="col-8">
-                                            <div class="ps-3">
-                                                <h6 class="mb-1"><a href="{{ route('articles.show', $popularArticle->slug) }}" class="text-decoration-none text-dark">{{ $popularArticle->title }}</a></h6>
-                                                <small class="text-muted"><i class="far fa-clock me-1"></i> {{ $popularArticle->published_at->diffForHumans() }}</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    
-                    <!-- برچسب‌ها -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">برچسب‌ها</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach(\App\Models\Tag::withCount('articles')->orderByDesc('articles_count')->limit(10)->get() as $tag)
-                                    <a href="{{ route('articles.tag', $tag->slug) }}" class="badge bg-light text-dark text-decoration-none p-2">{{ $tag->name }}</a>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- خبرنامه -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">عضویت در خبرنامه</h5>
-                        </div>
-                        <div class="card-body">
-                            <p>برای دریافت آخرین مقالات و اخبار، در خبرنامه ما عضو شوید.</p>
-                            <form>
-                                <div class="input-group">
-                                    <input type="email" class="form-control" placeholder="ایمیل خود را وارد کنید...">
-                                    <button class="btn btn-primary" type="submit">عضویت</button>
-                                </div>
-                            </form>
+                    <!-- Share Buttons -->
+                    <div class="text-center mt-5">
+                        <h6 class="fw-bold mb-3">اشتراک‌گذاری</h6>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="https://twitter.com/intent/tweet?url={{ urlencode(url()->current()) }}&text={{ urlencode($article->title) }}" 
+                               class="btn btn-blue btn-sm px-4 py-2 share-btn" 
+                               aria-label="اشتراک در توییتر">
+                                <i class="bi bi-twitter me-1"></i> توییتر
+                            </a>
+                            <a href="https://t.me/share/url?url={{ urlencode(url()->current()) }}&text={{ urlencode($article->title) }}" 
+                               class="btn btn-blue btn-sm px-4 py-2 share-btn" 
+                               aria-label="اشتراک در تلگرام">
+                                <i class="bi bi-telegram me-1"></i> تلگرام
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode(url()->current()) }}" 
+                               class="btn btn-blue btn-sm px-4 py-2 share-btn" 
+                               aria-label="اشتراک در لینکدین">
+                                <i class="bi bi-linkedin me-1"></i> لینکدین
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+
+        <!-- Related Articles -->
+        @if ($relatedArticles->isNotEmpty())
+            <section class="container my-5">
+                <h6 class="fw-bold text-center mb-4">مقالات مرتبط</h6>
+                <div class="row g-4">
+                    @foreach ($relatedArticles as $related)
+                        <div class="col-md-4">
+                            <article class="card h-100 border-0 bg-white shadow-sm animate-fade-in">
+                                <div class="image-container position-relative">
+                                    <img src="{{ $related->featured_image ? asset('storage/' . $related->featured_image) : 'https://via.placeholder.com/1200x900' }}" 
+                                         class="card-img-top img-fluid" 
+                                         alt="{{ $related->title }}"
+                                         loading="lazy">
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title fw-bold">{{ $related->title }}</h6>
+                                    @if ($related->excerpt)
+                                        <p class="card-text text-muted small">{{ Str::limit($related->excerpt, 80) }}</p>
+                                    @endif
+                                    <a href="{{ route('admin.articles.show', $related->id) }}" class="btn btn-outline-blue btn-sm px-3 py-1">ادامه مطلب</a>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <small class="text-muted">{{ $related->published_at->format('d M Y') }}</small>
+                                </div>
+                            </article>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+    </div>
+@endsection
+
+@section('styles')
+    <style>
+        :root {
+            --blue: #38bdf8;
+            --light-blue: #e0f2fe;
+            --secondary: #9ca3af;
+            --white: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            background-color: var(--light-blue);
+            color: var(--text);
+        }
+        .hero-section {
+            min-height: 400px;
+        }
+        .text-shadow {
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        .card {
+            border-radius: 12px;
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        .image-container {
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+        }
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .card:hover .image-container img {
+            transform: scale(1.03);
+        }
+        .btn-blue {
+            background-color: var(--blue);
+            border-color: var(--blue);
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        .btn-blue:hover {
+            transform: scale(1.05);
+        }
+        .btn-outline-blue {
+            border-color: var(--blue);
+            color: var(--blue);
+            border-radius: 8px;
+        }
+        .btn-outline-blue:hover {
+            background-color: var(--blue);
+            color: var(--white);
+        }
+        .alert-blue {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-color: var(--blue);
+            color: var(--text);
+        }
+        .bg-blue {
+            background-color: var(--blue);
+        }
+        .badge {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .share-btn {
+            transition: transform 0.2s ease;
+        }
+        .share-btn:hover {
+            transform: scale(1.1);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 @endsection
